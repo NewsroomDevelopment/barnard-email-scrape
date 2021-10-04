@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import subprocess
 import json
+import numpy as np
 
 
 cookies = None
@@ -15,7 +16,6 @@ except AttributeError:
     # no pyopenssl support used / needed / available
     pass
 
-
 def generate_cookies():
     '''
     Retrieves valid cookies from a Puppeteer script. Full path for node
@@ -28,10 +28,15 @@ def generate_cookies():
 generate_cookies()
    
 r = requests.get(
-    'https://directory.columbia.edu/people/search?filter.searchTerm=a&pageSize=5000',
-    cookies=cookies)
-
+    'https://directory.columbia.edu/people/search?filter.email=*@barnard.edu&pageSize=10000',
+    cookies=cookies
+    )
 soup = BeautifulSoup(r.text, 'html.parser')
-all_emails = [a.text for a in soup.find_all('a', {'class': 'mailto'})]
-print(len(all_emails))
 
+emails = []
+rows = soup.find_all('tr')
+for row in rows:
+  if '<strong>Title:</strong><br/>Student</div>' in str(row):
+    emails.append(row.find('a', {'class': 'mailto'}).get_text())
+
+np.savetxt('barnard_emails.csv', emails, delimiter=',', fmt='%s')
